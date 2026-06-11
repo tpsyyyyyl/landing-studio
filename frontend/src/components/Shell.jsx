@@ -1,6 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
 import { clearSession, getEmail } from '../api'
-import AnimatedBackground from './AnimatedBackground'
 import ThemeControls from './ThemeControls'
 
 export default function Shell({ children }) {
@@ -14,7 +13,6 @@ export default function Shell({ children }) {
 
   return (
     <div className="min-h-screen">
-      <AnimatedBackground />
       <nav className="sticky top-0 z-10 border-b border-line bg-ink/80 backdrop-blur">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
           <Link to="/dashboard" className="text-lg font-bold text-strong">

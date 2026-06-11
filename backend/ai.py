@@ -12,7 +12,7 @@ MODEL = "llama-3.3-70b-versatile"
 STYLES = {
     "dark": """- Dark theme: background #0a0a14, cards on #111127, accent color — pick ONE fitting the business (purple #6366f1, cyan #06b6d4, emerald #10b981, orange #f97316, etc.)
 - Typography: use Google Fonts (import in <style>) — Inter or Plus Jakarta Sans
-- Subtle animated background: 2-3 blurred color orbs (position:fixed, blur:100px, opacity:0.12, slow float animation)
+- Subtle background depth: 2-3 blurred color orbs (position:fixed, blur:100px, opacity:0.12, static — no animation)
 - Cards: glassmorphism style (background rgba white 4%, border rgba white 8%, backdrop-filter blur 10px, border-radius 16px)
 - Buttons: gradient fill, border-radius 10px, hover: lift + glow shadow""",
     "light": """- Light minimal theme: background #fafafa, white cards with subtle border #e5e5e5 and soft shadow, near-black text #171717, ONE muted accent color fitting the business (deep blue #1d4ed8, forest #15803d, terracotta #c2410c, etc.)
@@ -137,8 +137,11 @@ Business description: {description}{answers_block}
 7. FOOTER — business name, short tagline, copyright 2026
 
 === ANIMATIONS ===
-- On page load: hero elements fade in with translateY (staggered, use animation-delay)
-- On scroll: sections animate in using IntersectionObserver + CSS class toggle (add class "visible" to trigger opacity:0→1 + translateY:20px→0, transition 0.6s)
+- On page load: hero elements fade in with translateY (staggered, use animation-delay + animation-fill-mode: backwards)
+- On scroll: sections animate in. CRITICAL — content must be visible even if JS fails, so use exactly this progressive-enhancement pattern:
+  * Do NOT put any hiding class (opacity:0) in the HTML markup itself
+  * JS on DOMContentLoaded adds class "reveal" to each section, then IntersectionObserver adds class "visible" when the section enters the viewport (threshold 0.15) and unobserves it — never remove the class afterwards
+  * CSS: `section.reveal {{ opacity: 0; transform: translateY(20px); transition: opacity .6s, transform .6s; }}` and `section.reveal.visible {{ opacity: 1; transform: none; }}` (the .visible rule must come after .reveal)
 - FAQ accordion: smooth max-height transition
 
 === TECHNICAL ===

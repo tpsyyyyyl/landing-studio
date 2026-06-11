@@ -1,11 +1,9 @@
 import { Link } from 'react-router-dom'
-import AnimatedBackground from './AnimatedBackground'
 import ThemeControls from './ThemeControls'
 
 export default function AuthCard({ title, subtitle, children, footer }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-6">
-      <AnimatedBackground />
       <div className="absolute right-6 top-6 z-[1]">
         <ThemeControls />
       </div>
