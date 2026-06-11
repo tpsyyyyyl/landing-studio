@@ -216,6 +216,7 @@ Business description: {description}{answers_block}
 
 === TECHNICAL ===
 - Single HTML file, all CSS in <style>, all JS in <script>
+- Set `color-scheme` on :root matching the page background (dark or light) so native scrollbars and form controls match the theme; also style the scrollbar to fit the design (thin, rounded semi-transparent thumb, transparent track) via `scrollbar-width`/`scrollbar-color` and `::-webkit-scrollbar*`
 - Fully responsive (mobile-first, CSS Grid + Flexbox)
 - No external JS libraries (vanilla JS only)
 - All text content (headings, copy, testimonials, FAQ) written in {language}, generated to fit the specific business

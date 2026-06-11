@@ -57,10 +57,15 @@ _dist = os.path.join(os.path.dirname(__file__), "..", "frontend", "dist")
 if os.path.isdir(_dist):
     app.mount("/assets", StaticFiles(directory=os.path.join(_dist, "assets")), name="assets")
 
+    _dist_root = os.path.realpath(_dist)
+    _index = os.path.join(_dist_root, "index.html")
+
     # SPA fallback: client-side routes (/dashboard, /preview/3) must serve index.html
     @app.get("/{path:path}")
     def spa(path: str):
-        file = os.path.join(_dist, path)
-        if path and os.path.isfile(file):
-            return FileResponse(file)
-        return FileResponse(os.path.join(_dist, "index.html"))
+        if path:
+            file = os.path.realpath(os.path.join(_dist_root, path))
+            # contain the resolved path inside dist/ — block ../ traversal
+            if file.startswith(_dist_root + os.sep) and os.path.isfile(file):
+                return FileResponse(file)
+        return FileResponse(_index)

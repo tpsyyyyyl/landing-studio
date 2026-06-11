@@ -3,6 +3,7 @@
 
 /* Theme state lives on <html data-theme="dark|light" data-scheme="indigo|sunset|emerald"> */
 :root {
+  color-scheme: dark;
   --t-ink: #0a0a14;
   --t-panel: #111127;
   --t-line: rgba(255, 255, 255, 0.08);
@@ -19,6 +20,7 @@
 }
 
 [data-theme='light'] {
+  color-scheme: light;
   --t-ink: #f6f7fb;
   --t-panel: #ffffff;
   --t-line: rgba(15, 23, 42, 0.1);
@@ -58,6 +60,29 @@
 body {
   @apply bg-ink text-body font-sans antialiased;
   transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Slim theme-aware scrollbars (page + inner panels) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--t-faint) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--t-faint);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--t-dim);
+  background-clip: padding-box;
 }
 
 /* Aurora background orbs */
