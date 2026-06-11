@@ -1,13 +1,31 @@
 import asyncio
 import json
+import logging
 import os
+import time
 
 from fastapi import HTTPException
-from groq import Groq
+from groq import AsyncGroq
 
-_client: Groq | None = None
+logger = logging.getLogger("landing_studio.ai")
 
-MODEL = "llama-3.3-70b-versatile"
+_client: AsyncGroq | None = None
+
+MODELS = {
+    "scout": "meta-llama/llama-4-scout-17b-16e-instruct",
+    "gpt-oss": "openai/gpt-oss-120b",
+}
+# Groq free tier caps tokens-per-minute per request (8000 for gpt-oss-120b),
+# so the output budget must leave room for the ~1k-token prompt
+GENERATION_MAX_TOKENS = {
+    "scout": 16384,
+    "gpt-oss": 6000,
+}
+DEFAULT_MODEL_KEY = os.getenv("GROQ_MODEL", "gpt-oss")
+
+
+def generation_max_tokens(model_key: str) -> int:
+    return GENERATION_MAX_TOKENS.get(model_key or DEFAULT_MODEL_KEY, 8192)
 
 STYLES = {
     "dark": """- Dark theme: background #0a0a14, cards on #111127, accent color — pick ONE fitting the business (purple #6366f1, cyan #06b6d4, emerald #10b981, orange #f97316, etc.)
@@ -28,44 +46,83 @@ STYLES = {
 }
 
 
-def _get_client() -> Groq:
+def resolve_model(model_key: str) -> str:
+    key = model_key or DEFAULT_MODEL_KEY
+    if key not in MODELS:
+        raise HTTPException(status_code=400, detail=f"Unknown model: {key}")
+    return MODELS[key]
+
+
+def _get_client() -> AsyncGroq:
     global _client
     if _client is None:
         api_key = os.getenv("GROQ_API_KEY")
         if not api_key:
             raise HTTPException(status_code=503, detail="GROQ_API_KEY is not configured")
-        _client = Groq(api_key=api_key)
+        _client = AsyncGroq(api_key=api_key)
     return _client
 
 
-async def call_groq(prompt: str, timeout: float, max_tokens: int = 4096) -> str:
+def _map_error(e: Exception) -> HTTPException:
+    if "429" in str(e) or "rate limit" in str(e).lower():
+        return HTTPException(
+            status_code=429,
+            detail="Daily AI quota reached. Please try again tomorrow.",
+        )
+    return HTTPException(status_code=502, detail=f"AI error: {str(e)}")
+
+
+async def call_groq(prompt: str, timeout: float, max_tokens: int = 4096, model_key: str = "") -> str:
     client = _get_client()
-    loop = asyncio.get_running_loop()
+    model = resolve_model(model_key)
+    started = time.monotonic()
     try:
         response = await asyncio.wait_for(
-            loop.run_in_executor(None, lambda: client.chat.completions.create(
-                model=MODEL,
+            client.chat.completions.create(
+                model=model,
                 messages=[{"role": "user", "content": prompt}],
                 temperature=0.7,
                 max_tokens=max_tokens,
-            )),
-            timeout=timeout
+            ),
+            timeout=timeout,
         )
         text = response.choices[0].message.content
         if not text:
             raise HTTPException(status_code=502, detail="AI returned an empty response")
+        logger.info("groq call model=%s duration=%.1fs chars=%d", model, time.monotonic() - started, len(text))
         return text.strip()
     except TimeoutError:
         raise HTTPException(status_code=504, detail=f"AI did not respond within {int(timeout)} seconds")
     except HTTPException:
         raise
     except Exception as e:
-        if "429" in str(e) or "rate limit" in str(e).lower():
-            raise HTTPException(
-                status_code=429,
-                detail="Daily AI quota reached. Please try again tomorrow.",
-            )
-        raise HTTPException(status_code=502, detail=f"AI error: {str(e)}")
+        raise _map_error(e)
+
+
+async def stream_groq(prompt: str, max_tokens: int | None = None, model_key: str = ""):
+    """Yields text chunks from a streaming Groq completion."""
+    client = _get_client()
+    model = resolve_model(model_key)
+    if max_tokens is None:
+        max_tokens = generation_max_tokens(model_key)
+    started = time.monotonic()
+    total = 0
+    try:
+        stream = await client.chat.completions.create(
+            model=model,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=max_tokens,
+            stream=True,
+        )
+        async for chunk in stream:
+            delta = chunk.choices[0].delta.content if chunk.choices else None
+            if delta:
+                total += len(delta)
+                yield delta
+        logger.info("groq stream model=%s duration=%.1fs chars=%d", model, time.monotonic() - started, total)
+    except Exception as e:
+        raise _map_error(e)
 
 
 def _strip_fences(text: str) -> str:
@@ -77,7 +134,20 @@ def _strip_fences(text: str) -> str:
     return text.strip()
 
 
-async def clarify_questions(business_name: str, description: str) -> list[str]:
+def finalize_html(text: str) -> str | None:
+    """Strip fences and validate completeness. Returns None when the HTML is unusable."""
+    html = _strip_fences(text)
+    lower = html.lower()
+    if "<html" not in lower or not lower.rstrip().endswith("</html>"):
+        return None
+    if len(html) < 2000:
+        return None
+    if not lower.startswith("<!doctype"):
+        html = "<!DOCTYPE html>\n" + html
+    return html
+
+
+async def clarify_questions(business_name: str, description: str, model_key: str = "") -> list[str]:
     prompt = f"""You are a landing page designer. A client wants a page for their business and you need to understand the details.
 
 Business: {business_name}
@@ -93,7 +163,7 @@ Ask exactly 5 clarifying questions in English. The questions must cover:
 Return ONLY a JSON array of 5 strings. No explanations. Format:
 ["Question 1?", "Question 2?", "Question 3?", "Question 4?", "Question 5?"]"""
 
-    text = await call_groq(prompt, timeout=30.0, max_tokens=512)
+    text = await call_groq(prompt, timeout=30.0, max_tokens=1024, model_key=model_key)
     text = _strip_fences(text)
 
     try:
@@ -105,7 +175,7 @@ Return ONLY a JSON array of 5 strings. No explanations. Format:
     return questions
 
 
-async def generate_landing(
+def generate_prompt(
     business_name: str,
     description: str,
     answers: str,
@@ -118,7 +188,7 @@ async def generate_landing(
     if answers.strip():
         answers_block = f"\n\nAdditional details from the client (answers to clarifying questions):\n{answers}"
 
-    prompt = f"""You are an expert web designer. Create a stunning, complete single-file HTML landing page.
+    return f"""You are an expert web designer. Create a stunning, complete single-file HTML landing page.
 
 Business name: {business_name}
 Business description: {description}{answers_block}
@@ -137,7 +207,7 @@ Business description: {description}{answers_block}
 7. FOOTER — business name, short tagline, copyright 2026
 
 === ANIMATIONS ===
-- On page load: hero elements fade in with translateY (staggered, use animation-delay + animation-fill-mode: backwards)
+- On page load: hero elements fade in with translateY (staggered via animation-delay, with `animation-fill-mode: both`). CRITICAL: the hero elements' base CSS must NOT contain `opacity: 0` — the hidden state must exist ONLY inside the keyframes' `from` block, so the elements stay visible after the animation ends
 - On scroll: sections animate in. CRITICAL — content must be visible even if JS fails, so use exactly this progressive-enhancement pattern:
   * Do NOT put any hiding class (opacity:0) in the HTML markup itself
   * JS on DOMContentLoaded adds class "reveal" to each section, then IntersectionObserver adds class "visible" when the section enters the viewport (threshold 0.15) and unobserves it — never remove the class afterwards
@@ -151,5 +221,29 @@ Business description: {description}{answers_block}
 - All text content (headings, copy, testimonials, FAQ) written in {language}, generated to fit the specific business
 - Return ONLY the HTML code, no markdown, no explanation, no ```html wrapper"""
 
-    text = await call_groq(prompt, timeout=90.0, max_tokens=8192)
-    return _strip_fences(text)
+
+RETRY_SUFFIX = "\n\nIMPORTANT: Your previous attempt was incomplete. Return the COMPLETE HTML document from <!DOCTYPE html> to </html> with nothing cut off."
+
+
+async def generate_landing(
+    business_name: str,
+    description: str,
+    answers: str,
+    style: str,
+    language: str,
+    model_key: str = "",
+) -> str:
+    prompt = generate_prompt(business_name, description, answers, style, language)
+    max_tokens = generation_max_tokens(model_key)
+
+    text = await call_groq(prompt, timeout=120.0, max_tokens=max_tokens, model_key=model_key)
+    html = finalize_html(text)
+    if html is not None:
+        return html
+
+    logger.warning("generation invalid (len=%d), retrying once", len(text))
+    text = await call_groq(prompt + RETRY_SUFFIX, timeout=120.0, max_tokens=max_tokens, model_key=model_key)
+    html = finalize_html(text)
+    if html is None:
+        raise HTTPException(status_code=502, detail="AI returned an incomplete page twice. Please try again.")
+    return html

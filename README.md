@@ -1,6 +1,8 @@
 # Landing Studio
 
-AI-powered SaaS that generates complete, animated, responsive landing pages from a short business description — with accounts, generation history and one-click code export.
+![CI](https://github.com/tpsyyyyyl/landing-studio/actions/workflows/ci.yml/badge.svg)
+
+AI-powered SaaS that generates complete, animated, responsive landing pages from a short business description — with accounts, live streaming generation, history and one-click code export.
 
 ![Home](docs/home.png)
 
@@ -28,13 +30,16 @@ AI-powered SaaS that generates complete, animated, responsive landing pages from
 - **Generation history** — every page is saved; re-open, preview, download or delete anytime
 - **Code export** — download a clean, dependency-free single HTML file as ZIP
 - **Responsive preview** — desktop / tablet / mobile toggle in an embedded sandbox
+- **Two AI models** — GPT-OSS 120B (best quality) or Llama 4 Scout (fastest), selectable per generation
+- **Live streaming** — watch the AI write your page token-by-token in a live preview (SSE)
+- **Production hardening** — output validation with auto-retry, per-user daily rate limits, request logging, `/api/health`, Alembic migrations, Postgres-ready (SQLite by default)
 
 ## Tech stack
 
 | Layer | Tech |
 |---|---|
-| Backend | FastAPI, SQLAlchemy 2 (SQLite), PyJWT, bcrypt |
-| AI | Groq — `llama-3.3-70b-versatile` |
+| Backend | FastAPI, SQLAlchemy 2 + Alembic (SQLite / PostgreSQL), PyJWT, bcrypt |
+| AI | Groq — `openai/gpt-oss-120b` + `llama-4-scout` (streaming) |
 | Frontend | React 19, Vite, Tailwind CSS 4, React Router |
 | Tests | pytest (12 tests: auth, generations CRUD, access isolation) |
 | Deploy | Render (single service: FastAPI serves the built SPA) |
@@ -76,12 +81,16 @@ AI calls are mocked in tests — no API key or tokens needed.
 |---|---|---|
 | POST | `/api/auth/register` · `/login` · `/demo` | Get a JWT |
 | GET | `/api/auth/me` | Current user |
+| GET | `/api/health` · `/api/models` | Service health, available AI models |
 | POST | `/api/clarify` | 5 AI clarifying questions |
 | POST | `/api/generate` | Generate & save a landing page |
+| POST | `/api/generate/stream` | Same, streamed as SSE for live preview |
 | GET/DELETE | `/api/generations[/{id}]` | History CRUD |
 | GET | `/api/generations/{id}/download` | ZIP export |
 
 ## Notes
 
-- SQLite keeps the stack zero-config; the SQLAlchemy layer makes a later Postgres swap trivial.
-- On Render's free tier the filesystem is ephemeral — the demo account is re-seeded on every restart.
+- `DATABASE_URL` switches the database (defaults to local SQLite; `render.yaml` provisions free Postgres). Schema is managed by Alembic: `alembic upgrade head`.
+- `GROQ_MODEL` sets the default model key (`gpt-oss` or `scout`); users can override per generation in the UI.
+- Daily limits: 20 generations per user, 5 for the demo account.
+- The demo account is re-seeded on every restart (`python -m backend.seed_demo`).

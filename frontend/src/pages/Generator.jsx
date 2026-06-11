@@ -1,12 +1,17 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../api'
+import { api, getToken } from '../api'
 import Shell from '../components/Shell'
 
 const STYLES = [
   { id: 'dark', name: 'Dark Glass', text: 'Deep navy, glassmorphism cards, glowing accents' },
   { id: 'light', name: 'Light Minimal', text: 'Airy whitespace, clean borders, one muted accent' },
   { id: 'vibrant', name: 'Bold Vibrant', text: 'Saturated gradients, oversized type, pill buttons' },
+]
+
+const MODELS = [
+  { id: 'gpt-oss', name: 'GPT-OSS 120B', text: 'Best quality — strongest open model on Groq' },
+  { id: 'scout', name: 'Llama 4 Scout', text: 'Fastest — ~460 tokens/s, lighter model' },
 ]
 
 const LANGUAGES = ['English', 'Ukrainian', 'German', 'Polish', 'Spanish']
@@ -20,9 +25,14 @@ export default function Generator() {
   const [businessName, setBusinessName] = useState('')
   const [description, setDescription] = useState('')
   const [style, setStyle] = useState('dark')
+  const [model, setModel] = useState('gpt-oss')
   const [language, setLanguage] = useState('English')
   const [questions, setQuestions] = useState([])
   const [answers, setAnswers] = useState([])
+
+  const [liveHtml, setLiveHtml] = useState('')
+  const [charCount, setCharCount] = useState(0)
+  const lastRender = useRef(0)
 
   async function toQuestions(e) {
     e.preventDefault()
@@ -31,7 +41,7 @@ export default function Generator() {
     try {
       const data = await api('/api/clarify', {
         method: 'POST',
-        body: { business_name: businessName, description },
+        body: { business_name: businessName, description, model },
       })
       setQuestions(data.questions)
       setAnswers(data.questions.map(() => ''))
@@ -46,23 +56,68 @@ export default function Generator() {
   async function generate() {
     setError('')
     setBusy(true)
+    setLiveHtml('')
+    setCharCount(0)
     setStep(3)
+
+    const answersText = questions
+      .map((q, i) => (answers[i].trim() ? `${q} — ${answers[i].trim()}` : null))
+      .filter(Boolean)
+      .join('\n')
+
     try {
-      const answersText = questions
-        .map((q, i) => (answers[i].trim() ? `${q} — ${answers[i].trim()}` : null))
-        .filter(Boolean)
-        .join('\n')
-      const gen = await api('/api/generate', {
+      const res = await fetch('/api/generate/stream', {
         method: 'POST',
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
+        body: JSON.stringify({
           business_name: businessName,
           description,
           answers: answersText,
           style,
           language,
-        },
+          model,
+        }),
       })
-      navigate(`/preview/${gen.id}`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.detail || `Request failed (${res.status})`)
+      }
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let buffer = ''
+      let html = ''
+
+      for (;;) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+
+        const events = buffer.split('\n\n')
+        buffer = events.pop()
+        for (const event of events) {
+          if (!event.startsWith('data: ')) continue
+          const payload = JSON.parse(event.slice(6))
+          if (payload.error) throw new Error(payload.error)
+          if (payload.done) {
+            navigate(`/preview/${payload.id}`)
+            return
+          }
+          if (payload.delta) {
+            html += payload.delta
+            setCharCount(html.length)
+            const now = Date.now()
+            if (now - lastRender.current > 400) {
+              lastRender.current = now
+              setLiveHtml(html)
+            }
+          }
+        }
+      }
+      throw new Error('Stream ended unexpectedly. Please try again.')
     } catch (err) {
       setError(err.message)
       setStep(2)
@@ -76,7 +131,7 @@ export default function Generator() {
 
   return (
     <Shell>
-      <div className="mx-auto max-w-2xl">
+      <div className={step === 3 ? 'mx-auto max-w-4xl' : 'mx-auto max-w-2xl'}>
         <div className="mb-8 flex items-center gap-3 text-sm">
           {['Business', 'Details', 'Generate'].map((label, i) => (
             <div key={label} className="flex items-center gap-3">
@@ -128,6 +183,27 @@ export default function Generator() {
                   >
                     <p className="font-bold text-strong">{s.name}</p>
                     <p className="mt-1 text-xs text-dim">{s.text}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-3 text-sm font-semibold text-body">AI model</p>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {MODELS.map((m) => (
+                  <button
+                    type="button"
+                    key={m.id}
+                    onClick={() => setModel(m.id)}
+                    className={`rounded-xl border p-4 text-left transition ${
+                      model === m.id
+                        ? 'border-accent bg-accent/10'
+                        : 'border-line bg-panel hover:border-dim'
+                    }`}
+                  >
+                    <p className="font-bold text-strong">{m.name}</p>
+                    <p className="mt-1 text-xs text-dim">{m.text}</p>
                   </button>
                 ))}
               </div>
@@ -193,12 +269,29 @@ export default function Generator() {
         )}
 
         {step === 3 && (
-          <div className="py-24 text-center">
-            <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-line border-t-accent" />
-            <h1 className="mt-6 text-xl font-bold text-strong">Generating your page…</h1>
-            <p className="mt-2 text-sm text-dim">
-              The AI is writing copy and styling sections. Usually takes 20–60 seconds.
+          <div className="py-6">
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-line border-t-accent" />
+              <h1 className="text-lg font-bold text-strong">Generating your page…</h1>
+              <span className="text-sm text-faint">{charCount.toLocaleString()} chars</span>
+            </div>
+            <p className="mt-2 text-center text-sm text-dim">
+              Watch the AI write your page live below.
             </p>
+            <div className="mt-6 rounded-2xl border border-line bg-panel p-3">
+              {liveHtml ? (
+                <iframe
+                  title="Live generation preview"
+                  srcDoc={liveHtml}
+                  sandbox=""
+                  className="h-[65vh] w-full rounded-lg border border-line bg-white"
+                />
+              ) : (
+                <div className="flex h-[65vh] items-center justify-center text-faint">
+                  Waiting for the first tokens…
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

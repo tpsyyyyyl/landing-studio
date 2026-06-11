@@ -33,6 +33,7 @@ class Generation(Base):
     answers: Mapped[str] = mapped_column(Text, default="")
     style: Mapped[str] = mapped_column(String(50), default="dark")
     language: Mapped[str] = mapped_column(String(50), default="English")
+    model: Mapped[str] = mapped_column(String(50), default="")
     html: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
 

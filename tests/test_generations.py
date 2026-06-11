@@ -19,10 +19,10 @@ FAKE_HTML = "<!DOCTYPE html><html><body><h1>Fake</h1></body></html>"
 
 @pytest.fixture(autouse=True)
 def mock_ai(monkeypatch):
-    async def fake_clarify(business_name, description):
+    async def fake_clarify(business_name, description, model_key=""):
         return ["Q1?", "Q2?", "Q3?", "Q4?", "Q5?"]
 
-    async def fake_generate(business_name, description, answers, style, language):
+    async def fake_generate(business_name, description, answers, style, language, model_key=""):
         return FAKE_HTML
 
     monkeypatch.setattr(ai, "clarify_questions", fake_clarify)
