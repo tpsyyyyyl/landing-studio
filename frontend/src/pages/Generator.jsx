@@ -72,7 +72,7 @@ export default function Generator() {
   }
 
   const input =
-    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-white placeholder-slate-500 outline-none transition focus:border-accent'
+    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-strong placeholder-faint outline-none transition focus:border-accent'
 
   return (
     <Shell>
@@ -82,12 +82,12 @@ export default function Generator() {
             <div key={label} className="flex items-center gap-3">
               <span
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
-                  step > i ? 'bg-accent text-white' : 'border border-line text-slate-500'
+                  step > i ? 'bg-accent text-white' : 'border border-line text-faint'
                 }`}
               >
                 {i + 1}
               </span>
-              <span className={step > i ? 'text-white' : 'text-slate-500'}>{label}</span>
+              <span className={step > i ? 'text-strong' : 'text-faint'}>{label}</span>
               {i < 2 && <span className="h-px w-8 bg-line" />}
             </div>
           ))}
@@ -95,7 +95,7 @@ export default function Generator() {
 
         {step === 1 && (
           <form onSubmit={toQuestions} className="space-y-5">
-            <h1 className="text-2xl font-bold text-white">Tell us about your business</h1>
+            <h1 className="text-2xl font-bold text-strong">Tell us about your business</h1>
             <input
               required
               placeholder="Business name"
@@ -113,7 +113,7 @@ export default function Generator() {
             />
 
             <div>
-              <p className="mb-3 text-sm font-semibold text-slate-300">Visual style</p>
+              <p className="mb-3 text-sm font-semibold text-body">Visual style</p>
               <div className="grid gap-3 sm:grid-cols-3">
                 {STYLES.map((s) => (
                   <button
@@ -123,18 +123,18 @@ export default function Generator() {
                     className={`rounded-xl border p-4 text-left transition ${
                       style === s.id
                         ? 'border-accent bg-accent/10'
-                        : 'border-line bg-panel hover:border-slate-600'
+                        : 'border-line bg-panel hover:border-dim'
                     }`}
                   >
-                    <p className="font-bold text-white">{s.name}</p>
-                    <p className="mt-1 text-xs text-slate-400">{s.text}</p>
+                    <p className="font-bold text-strong">{s.name}</p>
+                    <p className="mt-1 text-xs text-dim">{s.text}</p>
                   </button>
                 ))}
               </div>
             </div>
 
             <div>
-              <p className="mb-2 text-sm font-semibold text-slate-300">Page language</p>
+              <p className="mb-2 text-sm font-semibold text-body">Page language</p>
               <select value={language} onChange={(e) => setLanguage(e.target.value)} className={input}>
                 {LANGUAGES.map((l) => (
                   <option key={l} value={l} className="bg-panel">
@@ -156,13 +156,13 @@ export default function Generator() {
 
         {step === 2 && (
           <div className="space-y-5">
-            <h1 className="text-2xl font-bold text-white">A few quick questions</h1>
-            <p className="text-sm text-slate-400">
+            <h1 className="text-2xl font-bold text-strong">A few quick questions</h1>
+            <p className="text-sm text-dim">
               Answers are optional but make the result much better.
             </p>
             {questions.map((q, i) => (
               <div key={i}>
-                <p className="mb-1.5 text-sm text-slate-300">{q}</p>
+                <p className="mb-1.5 text-sm text-body">{q}</p>
                 <input
                   value={answers[i]}
                   onChange={(e) =>
@@ -177,7 +177,7 @@ export default function Generator() {
             <div className="flex gap-3">
               <button
                 onClick={() => setStep(1)}
-                className="rounded-xl border border-line px-6 py-3 font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white"
+                className="rounded-xl border border-line px-6 py-3 font-semibold text-body transition hover:border-dim hover:text-strong"
               >
                 Back
               </button>
@@ -195,8 +195,8 @@ export default function Generator() {
         {step === 3 && (
           <div className="py-24 text-center">
             <div className="mx-auto h-12 w-12 animate-spin rounded-full border-2 border-line border-t-accent" />
-            <h1 className="mt-6 text-xl font-bold text-white">Generating your page…</h1>
-            <p className="mt-2 text-sm text-slate-400">
+            <h1 className="mt-6 text-xl font-bold text-strong">Generating your page…</h1>
+            <p className="mt-2 text-sm text-dim">
               The AI is writing copy and styling sections. Usually takes 20–60 seconds.
             </p>
           </div>

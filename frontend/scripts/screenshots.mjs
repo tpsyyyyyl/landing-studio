@@ -19,8 +19,18 @@ async function shot(path, name, wait = 800) {
   console.log(`saved ${name}.png`)
 }
 
+async function setTheme(theme, scheme = 'indigo') {
+  await page.evaluate((t, s) => {
+    localStorage.setItem('landing_studio_theme', t)
+    localStorage.setItem('landing_studio_scheme', s)
+  }, theme, scheme)
+}
+
 await shot('/', 'home')
 await shot('/login', 'login')
+await setTheme('light')
+await shot('/', 'home-light')
+await setTheme('dark')
 
 // log into the demo account, then authenticated pages
 await page.goto(`${BASE}/login`, { waitUntil: 'networkidle0' })
@@ -34,6 +44,9 @@ await page.evaluate((s) => {
 }, session)
 
 await shot('/dashboard', 'dashboard')
+await setTheme('light', 'sunset')
+await shot('/dashboard', 'dashboard-light')
+await setTheme('dark')
 await shot('/new', 'generator')
 
 const gens = await page.evaluate(async () => {

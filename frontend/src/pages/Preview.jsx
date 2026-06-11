@@ -27,10 +27,10 @@ export default function Preview() {
     <Shell>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Link to="/dashboard" className="text-sm text-slate-400 hover:text-white">
+          <Link to="/dashboard" className="text-sm text-dim hover:text-strong">
             ← Back to dashboard
           </Link>
-          <h1 className="mt-1 text-2xl font-bold text-white">{gen?.business_name ?? 'Loading…'}</h1>
+          <h1 className="mt-1 text-2xl font-bold text-strong">{gen?.business_name ?? 'Loading…'}</h1>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex rounded-lg border border-line p-1 text-sm">
@@ -39,7 +39,7 @@ export default function Preview() {
                 key={d}
                 onClick={() => setDevice(d)}
                 className={`rounded-md px-3 py-1.5 capitalize transition ${
-                  device === d ? 'bg-accent text-white' : 'text-slate-400 hover:text-white'
+                  device === d ? 'bg-accent text-white' : 'text-dim hover:text-strong'
                 }`}
               >
                 {d}
@@ -67,7 +67,7 @@ export default function Preview() {
             className="h-[75vh] max-w-full rounded-lg border border-line bg-white transition-all"
           />
         ) : (
-          <div className="flex h-[75vh] items-center justify-center text-slate-500">Loading…</div>
+          <div className="flex h-[75vh] items-center justify-center text-faint">Loading…</div>
         )}
       </div>
     </Shell>

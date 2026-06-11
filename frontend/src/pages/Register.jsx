@@ -25,7 +25,7 @@ export default function Register() {
   }
 
   const input =
-    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-white placeholder-slate-500 outline-none transition focus:border-accent'
+    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-strong placeholder-faint outline-none transition focus:border-accent'
 
   return (
     <AuthCard

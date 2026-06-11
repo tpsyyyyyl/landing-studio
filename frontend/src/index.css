@@ -1,15 +1,89 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
-@theme {
+/* Theme state lives on <html data-theme="dark|light" data-scheme="indigo|sunset|emerald"> */
+:root {
+  --t-ink: #0a0a14;
+  --t-panel: #111127;
+  --t-line: rgba(255, 255, 255, 0.08);
+  --t-strong: #ffffff;
+  --t-body: #e2e8f0;
+  --t-dim: #94a3b8;
+  --t-faint: #64748b;
+  --t-accent-soft: #818cf8;
+  --orb-opacity: 0.16;
+
+  --orb-1: #6366f1;
+  --orb-2: #06b6d4;
+  --orb-3: #ec4899;
+}
+
+[data-theme='light'] {
+  --t-ink: #f6f7fb;
+  --t-panel: #ffffff;
+  --t-line: rgba(15, 23, 42, 0.1);
+  --t-strong: #0f172a;
+  --t-body: #334155;
+  --t-dim: #64748b;
+  --t-faint: #94a3b8;
+  --t-accent-soft: #4f46e5;
+  --orb-opacity: 0.3;
+}
+
+[data-scheme='sunset'] {
+  --orb-1: #f97316;
+  --orb-2: #ec4899;
+  --orb-3: #eab308;
+}
+
+[data-scheme='emerald'] {
+  --orb-1: #10b981;
+  --orb-2: #06b6d4;
+  --orb-3: #84cc16;
+}
+
+@theme inline {
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
-  --color-ink: #0a0a14;
-  --color-panel: #111127;
-  --color-line: rgba(255, 255, 255, 0.08);
+  --color-ink: var(--t-ink);
+  --color-panel: var(--t-panel);
+  --color-line: var(--t-line);
+  --color-strong: var(--t-strong);
+  --color-body: var(--t-body);
+  --color-dim: var(--t-dim);
+  --color-faint: var(--t-faint);
   --color-accent: #6366f1;
-  --color-accent-soft: #818cf8;
+  --color-accent-soft: var(--t-accent-soft);
 }
 
 body {
-  @apply bg-ink text-slate-200 font-sans antialiased;
+  @apply bg-ink text-body font-sans antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Aurora background orbs */
+.orb {
+  position: fixed;
+  border-radius: 9999px;
+  filter: blur(110px);
+  opacity: var(--orb-opacity);
+  pointer-events: none;
+  z-index: 0;
+  transition: background-color 0.5s ease;
+}
+
+@keyframes float-a {
+  from { transform: translate(0, 0) scale(1); }
+  to { transform: translate(8vw, 6vh) scale(1.15); }
+}
+@keyframes float-b {
+  from { transform: translate(0, 0) scale(1.1); }
+  to { transform: translate(-7vw, 8vh) scale(0.95); }
+}
+@keyframes float-c {
+  from { transform: translate(0, 0) scale(0.95); }
+  to { transform: translate(6vw, -8vh) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb { animation: none !important; }
 }

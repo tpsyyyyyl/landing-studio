@@ -38,7 +38,7 @@ export default function Login() {
   }
 
   const input =
-    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-white placeholder-slate-500 outline-none transition focus:border-accent'
+    'w-full rounded-lg border border-line bg-ink px-4 py-2.5 text-strong placeholder-faint outline-none transition focus:border-accent'
 
   return (
     <AuthCard
@@ -78,7 +78,7 @@ export default function Login() {
           {busy ? 'Please wait…' : 'Log in'}
         </button>
       </form>
-      <div className="my-4 flex items-center gap-3 text-xs text-slate-500">
+      <div className="my-4 flex items-center gap-3 text-xs text-faint">
         <span className="h-px flex-1 bg-line" />
         or
         <span className="h-px flex-1 bg-line" />
@@ -86,7 +86,7 @@ export default function Login() {
       <button
         onClick={tryDemo}
         disabled={busy}
-        className="w-full rounded-lg border border-line py-2.5 font-semibold text-slate-300 transition hover:border-slate-500 hover:text-white disabled:opacity-50"
+        className="w-full rounded-lg border border-line py-2.5 font-semibold text-body transition hover:border-dim hover:text-strong disabled:opacity-50"
       >
         Try demo — no sign-up
       </button>

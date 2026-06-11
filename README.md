@@ -14,9 +14,14 @@ AI-powered SaaS that generates complete, animated, responsive landing pages from
 |---|---|---|
 | ![Dashboard](docs/dashboard.png) | ![Generator](docs/generator.png) | ![Preview](docs/preview.png) |
 
+| Light theme | Light + sunset scheme |
+|---|---|
+| ![Light theme](docs/home-light.png) | ![Sunset scheme](docs/dashboard-light.png) |
+
 ## Features
 
 - **Auth & workspaces** — email/password accounts (bcrypt + JWT), every user sees only their own pages
+- **Animated aurora background** — pure-CSS floating gradient orbs (zero image weight), with dark/light theme toggle and 3 selectable color schemes (indigo / sunset / emerald), persisted per user in localStorage
 - **Demo mode** — "Try demo" button logs into a pre-seeded account, no sign-up needed
 - **3 visual styles** — dark glassmorphism, light minimal, bold vibrant
 - **Any language** — UI in English, generated pages in English, Ukrainian, German, Polish, Spanish…

@@ -3,6 +3,9 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import './index.css'
 import { getToken } from './api'
+import { applyStoredTheme } from './useTheme'
+
+applyStoredTheme()
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
