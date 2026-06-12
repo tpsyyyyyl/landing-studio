@@ -1,5 +1,5 @@
-app = "landing-studio"
-primary_region = "waw"
+app = "landing-studio-bohdan"
+primary_region = "fra"
 
 [build]
 
