@@ -61,19 +61,31 @@ git push
 - Універсальний `*` для скролбара НЕ протікає в iframe прев'ю (окремий документ). Refuted.
 - Дубль className `input` у Login/Register/Generator; різні regex для slug (api.js vs бекенд); зайвий `charCount` стейт; мертвий файл `components/AnimatedBackground.jsx`; `_map_error` віддає `str(e)` клієнту; демо-ліміт по рядку email замість прапора; `GENERATION_MAX_TOKENS` як паралельний dict до `MODELS`.
 
-## 🚀 Головний відкритий крок: ДЕПЛОЙ на Render
-`render.yaml` уже описує і web-сервіс, і безкоштовний Postgres — це один Blueprint.
-Кроки (робить користувач у браузері):
-1. dashboard.render.com → **New +** → **Blueprint**.
-2. Вибрати репо **tpsyyyyyl/landing-studio** (за потреби Configure account → дати доступ).
-3. Render прочитає `render.yaml` → створить сервіс `landing-studio` + базу `landing-studio-db`.
-4. Попросить **GROQ_API_KEY** (єдина змінна без автозаповнення) — скопіювати з `~/study/landing-studio/.env`. `JWT_SECRET` і `DATABASE_URL` підставляться самі.
-5. **Apply / Deploy Blueprint.** Перший білд ~5 хв.
+## 🚀 Головний відкритий крок: ДЕПЛОЙ на Fly.io (безкоштовно)
 
-Коли стане **Live** — користувач копіює **точний URL з дашборда** (НЕ вгадувати, як було з `-ekyb` у Project 1!) і дає сюди текстом. Тоді:
-- перевірити прод: `/api/health`, демо-логін, реальна генерація (рендериться в Chrome без білого екрана);
+**Render відпав** — у 2024 році вони прибрали безкоштовний tier для web services, мінімум $7/місяць.
+**Обрали Fly.io** — є справжній безкоштовний tier (256MB RAM, shared CPU).
+
+### Що треба зробити в наступній сесії:
+1. Встановити Fly CLI: `curl -L https://fly.io/install.sh | sh`
+2. Залогінитись: `fly auth login`
+3. Створити `fly.toml` у корені проєкту (ще не створено — треба налаштувати)
+4. Для БД: використати **Fly Postgres** (безкоштовно в межах free allowance) або **Supabase** (щедріший безкоштовний Postgres)
+5. Задеплоїти: `fly deploy`
+
+### Змінні середовища для Fly:
+```
+GROQ_API_KEY=<твій ключ з console.groq.com>
+JWT_SECRET=<згенерувати: python -c "import secrets; print(secrets.token_hex(32))">
+DATABASE_URL=<буде після створення Fly Postgres>
+```
+
+### Після деплою:
+- перевірити прод: `/api/health`, демо-логін, реальна генерація;
 - додати живе посилання в `README.md`;
 - закомітити + запушити.
+
+> `render.yaml` можна залишити в репо — не заважає.
 
 ## Деталі Groq (щоб не наступити вдруге)
 - Моделі: `gpt-oss` = `openai/gpt-oss-120b` (дефолт, якість), `scout` = `meta-llama/llama-4-scout-17b-16e-instruct` (швидкість). Maverick задеприкейчена на Groq (02.2026).
