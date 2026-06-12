@@ -1,0 +1,28 @@
+app = "landing-studio"
+primary_region = "waw"
+
+[build]
+
+[env]
+  DATABASE_PATH = "/data/landing_studio.db"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    hard_limit = 25
+    soft_limit = 20
+
+[[mounts]]
+  source = "landing_studio_data"
+  destination = "/data"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

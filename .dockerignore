@@ -1,0 +1,12 @@
+.env
+*.db
+__pycache__
+**/__pycache__
+*.pyc
+.venv
+frontend/node_modules
+frontend/dist
+.git
+tests
+docs
+HANDOFF.md
