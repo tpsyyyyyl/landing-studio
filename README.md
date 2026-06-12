@@ -1,6 +1,9 @@
 # Landing Studio
 
 ![CI](https://github.com/tpsyyyyyl/landing-studio/actions/workflows/ci.yml/badge.svg)
+[![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://landing-studio-bohdan.fly.dev)
+
+**Live demo:** https://landing-studio-bohdan.fly.dev
 
 AI-powered SaaS that generates complete, animated, responsive landing pages from a short business description — with accounts, live streaming generation, history and one-click code export.
 
@@ -42,7 +45,7 @@ AI-powered SaaS that generates complete, animated, responsive landing pages from
 | AI | Groq — `openai/gpt-oss-120b` + `llama-4-scout` (streaming) |
 | Frontend | React 19, Vite, Tailwind CSS 4, React Router |
 | Tests | pytest (12 tests: auth, generations CRUD, access isolation) |
-| Deploy | Render (single service: FastAPI serves the built SPA) |
+| Deploy | Fly.io (single machine, SQLite on persistent volume) |
 
 ## Run locally
 
