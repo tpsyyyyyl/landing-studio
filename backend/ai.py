@@ -134,6 +134,22 @@ def _strip_fences(text: str) -> str:
     return text.strip()
 
 
+_REVEAL_FAILSAFE = (
+    '<noscript><style>section.reveal{opacity:1!important;transform:none!important;}</style></noscript>'
+    '<script>addEventListener("load",function(){setTimeout(function(){'
+    'document.querySelectorAll("section.reveal:not(.visible)").forEach('
+    'function(s){s.classList.add("visible")})},1200)})</script>'
+)
+
+
+def _inject_reveal_failsafe(html: str) -> str:
+    """Guarantee reveal-animated sections become visible even if JS/observer fails."""
+    idx = html.lower().rfind("</html>")
+    if idx == -1:
+        return html + _REVEAL_FAILSAFE
+    return html[:idx] + _REVEAL_FAILSAFE + html[idx:]
+
+
 def finalize_html(text: str) -> str | None:
     """Strip fences and validate completeness. Returns None when the HTML is unusable."""
     html = _strip_fences(text)
@@ -144,7 +160,7 @@ def finalize_html(text: str) -> str | None:
         return None
     if not lower.startswith("<!doctype"):
         html = "<!DOCTYPE html>\n" + html
-    return html
+    return _inject_reveal_failsafe(html)
 
 
 async def clarify_questions(business_name: str, description: str, model_key: str = "") -> list[str]:
@@ -219,6 +235,7 @@ Business description: {description}{answers_block}
 - Set `color-scheme` on :root matching the page background (dark or light) so native scrollbars and form controls match the theme; also style the scrollbar to fit the design (thin, rounded semi-transparent thumb, transparent track) via `scrollbar-width`/`scrollbar-color` and `::-webkit-scrollbar*`
 - Fully responsive (mobile-first, CSS Grid + Flexbox)
 - No external JS libraries (vanilla JS only)
+- Never put class="reveal" or opacity:0 directly in section markup — define the reveal hidden state only inside <style>/JS, so content stays visible if scripts fail
 - All text content (headings, copy, testimonials, FAQ) written in {language}, generated to fit the specific business
 - Return ONLY the HTML code, no markdown, no explanation, no ```html wrapper"""
 

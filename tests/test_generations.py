@@ -115,3 +115,19 @@ def test_generations_isolated_between_users(token):
 def test_endpoints_require_auth():
     assert client.post("/api/clarify", json={"business_name": "a", "description": "b"}).status_code == 401
     assert client.get("/api/generations").status_code == 401
+
+
+def test_finalize_html_injects_failsafe():
+    # Валідний мінімальний HTML > 2000 символів з section.reveal
+    body = "<section class=\"reveal\">content</section>" + ("x" * 2000)
+    html_input = f"<!doctype html><html><head></head><body>{body}</body></html>"
+    result = ai.finalize_html(html_input)
+    assert result is not None
+    assert "<noscript>" in result
+    assert "reveal:not(.visible)" in result
+    assert result.rfind("<noscript>") < result.rfind("</html>")
+
+
+def test_finalize_html_invalid_returns_none():
+    result = ai.finalize_html("just some text without closing html tag")
+    assert result is None

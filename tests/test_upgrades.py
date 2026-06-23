@@ -41,12 +41,23 @@ def test_models_endpoint():
     assert set(r.json()["models"]) == {"scout", "gpt-oss"}
 
 
+FAILSAFE_MARKER = "section.reveal:not(.visible)"
+
+
+def _assert_finalized(result, source_html):
+    """Result preserves source content and has failsafe injected before </html>."""
+    assert result is not None
+    assert result.endswith("</html>")
+    assert source_html.removesuffix("</html>") in result
+    assert FAILSAFE_MARKER in result
+
+
 def test_finalize_html():
-    assert finalize_html(COMPLETE_HTML) == COMPLETE_HTML
+    _assert_finalized(finalize_html(COMPLETE_HTML), COMPLETE_HTML)
     assert finalize_html(NO_DOCTYPE_HTML).startswith("<!DOCTYPE html>")
     assert finalize_html(TRUNCATED_HTML) is None
     assert finalize_html("<html></html>") is None  # too short
-    assert finalize_html("```html\n" + COMPLETE_HTML + "\n```") == COMPLETE_HTML
+    _assert_finalized(finalize_html("```html\n" + COMPLETE_HTML + "\n```"), COMPLETE_HTML)
 
 
 @pytest.mark.anyio
@@ -59,7 +70,7 @@ async def test_generate_retries_on_truncated_output(monkeypatch):
 
     monkeypatch.setattr(ai, "call_groq", fake_call_groq)
     html = await ai.generate_landing("X", "Y", "", "dark", "English")
-    assert html == COMPLETE_HTML
+    _assert_finalized(html, COMPLETE_HTML)
     assert len(calls) == 2
     assert "COMPLETE HTML document" in calls[1]
 
